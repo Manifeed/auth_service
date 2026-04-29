@@ -5,7 +5,7 @@ Etat revu : implementation courante de `auth_service/`, contrats `shared_backend
 
 ## Synthese executive
 
-`auth_service` est maintenant dans un etat nettement plus solide qu'une simple extraction de backend. Le service est court, lisible, stateless cote process, et concentre bien la responsabilite register/login/session/logout derriere des routes internes protegees par token inter-service.
+`auth_service` est dans un etat nettement plus solide qu'une simple extraction de backend. Le service est court, lisible, stateless cote process, et concentre bien la responsabilite register/login/session/logout derriere des routes internes protegees par token inter-service.
 
 Les bases importantes sont en place :
 
@@ -18,7 +18,7 @@ Les bases importantes sont en place :
 - `last_seen_at` amorti au lieu d'etre ecrit a chaque resolution de session.
 - Tests unitaires ciblant les protections recemment ajoutees.
 
-Verdict : pret pour dev et staging interne, proche d'un socle production pour un trafic controle. Avant exposition a du trafic reel ou public, il reste surtout a renforcer la reproductibilite, l'observabilite, les tests d'integration DB, et quelques garanties operationnelles autour de Redis/secrets.
+Verdict : Avant exposition a du trafic reel ou public, il reste surtout a renforcer la reproductibilite, l'observabilite, les tests d'integration DB, et quelques garanties operationnelles autour de Redis/secrets.
 
 ## Ce qui est bien
 
