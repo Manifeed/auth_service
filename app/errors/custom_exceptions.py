@@ -1,0 +1,18 @@
+from shared_backend.errors.custom_exceptions import (
+	AdminAccessRequiredError,
+	ApiAccessDisabledError,
+	ApiKeyAllocationError,
+	ApiKeyNotFoundError,
+	CsrfOriginDeniedError,
+	DuplicateUserRegistrationError,
+	ExpiredSessionTokenError,
+	InactiveUserError,
+	InternalServiceAuthError,
+	InvalidCredentialsError,
+	InvalidPseudoError,
+	InvalidSessionTokenError,
+	MissingSessionTokenError,
+	RateLimitExceededError,
+	UserNotFoundError,
+	WeakPasswordError,
+)

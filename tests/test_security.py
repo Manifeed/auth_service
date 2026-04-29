@@ -1,0 +1,36 @@
+from types import SimpleNamespace
+
+import pytest
+
+from app.errors.custom_exceptions import InternalServiceAuthError
+from app.security import INTERNAL_SERVICE_TOKEN_HEADER, require_internal_service_token
+
+
+def _request(token: str | None = None):
+	headers = {}
+	if token is not None:
+		headers[INTERNAL_SERVICE_TOKEN_HEADER] = token
+	return SimpleNamespace(headers=headers)
+
+
+def test_internal_token_can_be_omitted_in_local_environment(monkeypatch) -> None:
+	monkeypatch.setenv("APP_ENV", "local")
+	monkeypatch.delenv("INTERNAL_SERVICE_TOKEN", raising=False)
+
+	require_internal_service_token(_request())
+
+
+def test_internal_token_is_required_in_strict_environment(monkeypatch) -> None:
+	monkeypatch.setenv("APP_ENV", "production")
+	monkeypatch.delenv("INTERNAL_SERVICE_TOKEN", raising=False)
+
+	with pytest.raises(InternalServiceAuthError):
+		require_internal_service_token(_request())
+
+
+def test_internal_token_matches_constant_time_secret(monkeypatch) -> None:
+	token = "a" * 32
+	monkeypatch.setenv("APP_ENV", "production")
+	monkeypatch.setenv("INTERNAL_SERVICE_TOKEN", token)
+
+	require_internal_service_token(_request(token))
