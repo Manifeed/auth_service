@@ -10,7 +10,7 @@ from app.clients.networking.redis_networking_client import (
 	RedisCommandError,
 	RedisNetworkingClient,
 )
-from app.errors.custom_exceptions import RateLimitExceededError
+from shared_backend.errors.custom_exceptions import RateLimitExceededError
 
 
 @dataclass

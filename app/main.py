@@ -5,9 +5,9 @@ from fastapi import FastAPI
 from app.clients.database.identity_session_database_client import (
 	check_identity_database_ready,
 )
-from app.errors.exception_handlers import register_exception_handlers
+from shared_backend.errors.exception_handlers import register_exception_handlers
 from app.services.routers.internal_auth_router import internal_auth_router
-from app.security import validate_internal_service_token_configuration
+from shared_backend.security.internal_service_auth import validate_internal_service_token_configuration
 
 from shared_backend.schemas.internal.service_schema import InternalServiceHealthRead
 

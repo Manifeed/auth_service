@@ -2,8 +2,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.errors.custom_exceptions import InternalServiceAuthError
-from app.security import INTERNAL_SERVICE_TOKEN_HEADER, require_internal_service_token
+from shared_backend.errors.custom_exceptions import InternalServiceAuthError
+from shared_backend.security.internal_service_auth import INTERNAL_SERVICE_TOKEN_HEADER, require_internal_service_token
 
 
 def _request(token: str | None = None):

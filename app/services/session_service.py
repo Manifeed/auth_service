@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from app.clients.database import identity_database_client
-from app.errors.custom_exceptions import (
+from shared_backend.errors.custom_exceptions import (
 	ExpiredSessionTokenError,
 	InactiveUserError,
 	InvalidSessionTokenError,

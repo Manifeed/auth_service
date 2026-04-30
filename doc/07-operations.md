@@ -22,6 +22,6 @@ Update docs in this folder whenever behavior changes in:
 - `app/main.py`
 - `app/routers/internal_auth_router.py`
 - `app/services/*`
-- `app/security.py`
+- `shared_backend/security/internal_service_auth.py`
 - `app/middleware/rate_limit.py`
 - `app/clients/database/*`

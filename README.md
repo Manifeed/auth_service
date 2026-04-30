@@ -22,7 +22,7 @@ services, not by browsers or public clients directly.
 - `app/services`: auth business use cases
 - `app/clients/database`: SQLAlchemy session and SQL access layer
 - `app/clients/networking`: Redis networking client for rate limiting
-- `app/security.py`: internal service token validation
+- `shared_backend.security.internal_service_auth`: shared inter-service token validation helpers
 - `app/middleware/rate_limit.py`: reusable rate limiting enforcement
 
 ## Quick Start (Local Development)
@@ -122,7 +122,7 @@ Current tests cover:
 Build:
 
 ```bash
-docker build -t manifeed-auth-service -f Dockerfile ..
+docker build -t manifeed-auth-service -f auth_service/Dockerfile ..
 ```
 
 Run:
@@ -134,6 +134,9 @@ docker run --rm -p 8000:8000 \
 	-e INTERNAL_SERVICE_TOKEN='replace-with-strong-secret-min-32-chars' \
 	manifeed-auth-service
 ```
+
+The image is multi-stage, runs as a non-root user, and installs
+`shared_backend` from a wheel built locally from the monorepo.
 
 ## Detailed Documentation
 

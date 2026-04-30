@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.errors.custom_exceptions import RateLimitExceededError
+from shared_backend.errors.custom_exceptions import RateLimitExceededError
 from app.middleware import rate_limit
 
 

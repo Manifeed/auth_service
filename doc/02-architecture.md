@@ -6,7 +6,7 @@
 - `app/services`: core authentication business logic
 - `app/clients/database`: DB session and SQL access
 - `app/clients/networking`: Redis communication for rate limiting
-- `app/security.py`: inter-service token validation
+- `shared_backend.security.internal_service_auth`: inter-service token validation
 - `app/middleware/rate_limit.py`: reusable rate limiting policy
 
 ## Route Layer

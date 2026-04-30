@@ -9,4 +9,3 @@ PyJWT==2.12.0
 cryptography==46.0.7
 argon2-cffi==23.1.0
 pytest==8.3.5
-manifeed-shared-backend @ git+https://github.com/Manifeed/shared_backend.git@main

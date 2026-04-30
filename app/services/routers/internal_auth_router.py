@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.middleware.rate_limit import enforce_rate_limit
@@ -11,7 +13,7 @@ from app.services.session_service import (
 	read_current_session_by_token,
 	resolve_session_token,
 )
-from app.security import require_internal_service_token
+from shared_backend.security.internal_service_auth import require_internal_service_token
 from app.clients.database.identity_session_database_client import get_identity_db_session
 
 
@@ -87,7 +89,7 @@ def login_internal_auth_user(
 
 @internal_auth_router.post("/session", response_model=AuthSessionRead)
 def read_internal_auth_session(
-	payload: InternalSessionTokenRequest,
+	payload: Annotated[InternalSessionTokenRequest, Body(embed=False)],
 	db: Session = Depends(get_identity_db_session),
 ) -> AuthSessionRead:
 	return read_current_session_by_token(db, session_token=payload.session_token)
@@ -95,7 +97,7 @@ def read_internal_auth_session(
 
 @internal_auth_router.post("/resolve-session", response_model=InternalResolvedSessionRead)
 def resolve_internal_auth_session(
-	payload: InternalSessionTokenRequest,
+	payload: Annotated[InternalSessionTokenRequest, Body(embed=False)],
 	db: Session = Depends(get_identity_db_session),
 ) -> InternalResolvedSessionRead:
 	current_user = resolve_session_token(db, session_token=payload.session_token)
@@ -111,7 +113,7 @@ def resolve_internal_auth_session(
 
 @internal_auth_router.post("/logout", response_model=AuthLogoutRead)
 def logout_internal_auth_user(
-	payload: InternalSessionTokenRequest,
+	payload: Annotated[InternalSessionTokenRequest, Body(embed=False)],
 	db: Session = Depends(get_identity_db_session),
 ) -> AuthLogoutRead:
 	return logout_session_token(db, session_token=payload.session_token)

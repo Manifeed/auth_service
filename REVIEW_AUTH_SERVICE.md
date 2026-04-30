@@ -212,10 +212,10 @@ Le decoupage est coherent pour un service FastAPI interne :
 - `app/clients/database` : isole SQLAlchemy et SQL brut.
 - `app/clients/networking` : isole Redis.
 - `app/middleware` : contient le rate limiting applicatif.
-- `app/security.py` : gere l'auth inter-services.
+- `shared_backend/security/internal_service_auth.py` : gere l'auth inter-services.
 - `shared_backend` : source des schemas, erreurs et helpers transverses.
 
-Le service ne parait pas sur-architecturé. Les facades locales `app/errors` et `app/utils` restent surtout une couche de compatibilite vers `shared_backend`, ce qui est acceptable si l'equipe veut garder des imports locaux stables.
+Le service ne parait pas sur-architecturé. Les imports d'erreurs et de securite pointent maintenant directement vers `shared_backend`, ce qui reduit la duplication locale.
 
 ## Scalabilite horizontale
 
