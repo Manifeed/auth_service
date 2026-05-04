@@ -1,22 +1,20 @@
 from __future__ import annotations
 
 from typing import Annotated
-
-from fastapi import APIRouter, Body, Depends, Request
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.orm import Session
 
-from app.middleware.rate_limit import enforce_rate_limit
 from app.services.login_user_service import login_user
 from app.services.register_user_service import register_user
+from app.clients.database.identity_session_database_client import get_identity_db_session
 from app.services.session_service import (
 	logout_session_token,
 	read_current_session_by_token,
 	resolve_session_token,
 )
+
 from shared_backend.security.internal_service_auth import require_internal_service_token
-from app.clients.database.identity_session_database_client import get_identity_db_session
-
-
+from shared_backend.schemas.internal.service_schema import InternalResolvedSessionRead
 from shared_backend.schemas.auth.auth_schema import (
 	AuthLoginRequestSchema,
 	AuthLogoutRead,
@@ -28,7 +26,6 @@ from shared_backend.schemas.internal.auth_service_schema import (
 	InternalAuthLoginRead,
 	InternalSessionTokenRequest,
 )
-from shared_backend.schemas.internal.service_schema import InternalResolvedSessionRead
 
 
 internal_auth_router = APIRouter(
@@ -40,45 +37,17 @@ internal_auth_router = APIRouter(
 
 @internal_auth_router.post("/register", response_model=AuthRegisterRead)
 def register_internal_auth_user(
-	request: Request,
-	payload: AuthRegisterRequestSchema,
+	payload: Annotated[AuthRegisterRequestSchema, Body(embed=True)],
 	db: Session = Depends(get_identity_db_session),
 ) -> AuthRegisterRead:
-	enforce_rate_limit(
-		request,
-		namespace="auth-register-ip",
-		limit=10,
-		window_seconds=3600,
-	)
-	enforce_rate_limit(
-		request,
-		namespace="auth-register-email",
-		identifier=payload.email.strip().lower(),
-		limit=5,
-		window_seconds=3600,
-	)
 	return register_user(db, payload)
 
 
 @internal_auth_router.post("/login", response_model=InternalAuthLoginRead)
 def login_internal_auth_user(
-	request: Request,
-	payload: AuthLoginRequestSchema,
+	payload: Annotated[AuthLoginRequestSchema, Body(embed=True)],
 	db: Session = Depends(get_identity_db_session),
 ) -> InternalAuthLoginRead:
-	enforce_rate_limit(
-		request,
-		namespace="auth-login-ip",
-		limit=30,
-		window_seconds=300,
-	)
-	enforce_rate_limit(
-		request,
-		namespace="auth-login-email",
-		identifier=payload.email.strip().lower(),
-		limit=10,
-		window_seconds=300,
-	)
 	result = login_user(db, payload)
 	return InternalAuthLoginRead(
 		session_token=result.session_token,
@@ -89,7 +58,7 @@ def login_internal_auth_user(
 
 @internal_auth_router.post("/session", response_model=AuthSessionRead)
 def read_internal_auth_session(
-	payload: Annotated[InternalSessionTokenRequest, Body(embed=False)],
+	payload: Annotated[InternalSessionTokenRequest, Body(embed=True)],
 	db: Session = Depends(get_identity_db_session),
 ) -> AuthSessionRead:
 	return read_current_session_by_token(db, session_token=payload.session_token)
@@ -97,7 +66,7 @@ def read_internal_auth_session(
 
 @internal_auth_router.post("/resolve-session", response_model=InternalResolvedSessionRead)
 def resolve_internal_auth_session(
-	payload: Annotated[InternalSessionTokenRequest, Body(embed=False)],
+	payload: Annotated[InternalSessionTokenRequest, Body(embed=True)],
 	db: Session = Depends(get_identity_db_session),
 ) -> InternalResolvedSessionRead:
 	current_user = resolve_session_token(db, session_token=payload.session_token)
@@ -113,7 +82,7 @@ def resolve_internal_auth_session(
 
 @internal_auth_router.post("/logout", response_model=AuthLogoutRead)
 def logout_internal_auth_user(
-	payload: Annotated[InternalSessionTokenRequest, Body(embed=False)],
+	payload: Annotated[InternalSessionTokenRequest, Body(embed=True)],
 	db: Session = Depends(get_identity_db_session),
 ) -> AuthLogoutRead:
 	return logout_session_token(db, session_token=payload.session_token)

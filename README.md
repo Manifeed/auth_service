@@ -12,18 +12,18 @@ services, not by browsers or public clients directly.
 - Session token issuance and hashed session storage
 - Session resolution for inter-service authentication flows
 - Idempotent logout (session revocation)
+- Active session cap and periodic session cleanup
 - Internal token gate (`x-manifeed-internal-token`) on all auth routes
-- Per-IP and per-email rate limiting for registration and login
 - Health and readiness probes for orchestration
 
 ## Architecture Overview
 
-- `app/routers`: HTTP route layer (`/internal/auth/*`)
+- `app/services/routers`: HTTP route layer (`/internal/auth/*`)
 - `app/services`: auth business use cases
 - `app/clients/database`: SQLAlchemy session and SQL access layer
-- `app/clients/networking`: Redis networking client for rate limiting
 - `shared_backend.security.internal_service_auth`: shared inter-service token validation helpers
-- `app/middleware/rate_limit.py`: reusable rate limiting enforcement
+- `shared_backend.errors.exception_handlers`: shared JSON error mapping
+- `shared_backend.utils.logging_utils`: shared request logging middleware
 
 ## Quick Start (Local Development)
 
@@ -38,12 +38,6 @@ python3 -m pip install -r requirements.txt
 ```bash
 export APP_ENV=local
 export IDENTITY_DATABASE_URL=postgresql://manifeed:manifeed@localhost:5432/manifeed_identity
-```
-
-Optional Redis for distributed rate limiting:
-
-```bash
-export REDIS_URL=redis://localhost:6379/0
 ```
 
 ### 3) Run the API
@@ -62,15 +56,34 @@ Service endpoints:
 - `POST /internal/auth/resolve-session`
 - `POST /internal/auth/logout`
 
+All `POST /internal/auth/*` endpoints expect a JSON body wrapped under
+`payload`, for example:
+
+```json
+{
+  "payload": {
+    "session_token": "msess_example"
+  }
+}
+```
+
 ## Security Model
 
 - All `/internal/auth/*` routes require `x-manifeed-internal-token`
   except in explicit local/test environments without configured token.
+- Incoming auth can validate either one `INTERNAL_SERVICE_TOKEN` or multiple
+  accepted secrets via `INTERNAL_SERVICE_TOKENS`.
+- `/internal/health` and `/internal/ready` stay unauthenticated for probes;
+  `/internal/ready` still validates strict token configuration.
 - Session tokens are generated as random secrets and only their SHA-256 hash
   is persisted in `user_sessions`.
+- Active sessions are capped per user and older sessions are revoked on login.
+- Expired sessions are purged periodically; revoked sessions are retained for
+  a bounded window before deletion.
 - Password hashing and verification are delegated to shared backend auth
   utilities (Argon2-based).
-- Login and registration are protected by rate limiting (IP + email buckets).
+- Login and registration rely on edge/gateway rate limiting; `auth_service`
+  itself stays focused on identity and session rules.
 
 ## Configuration
 
@@ -80,6 +93,7 @@ Service endpoints:
 - `IDENTITY_DATABASE_URL`: identity Postgres DSN
 - `REQUIRE_EXPLICIT_DATABASE_URLS`: requires explicit DB URL in strict envs
 - `INTERNAL_SERVICE_TOKEN`: shared secret for internal route protection
+- `INTERNAL_SERVICE_TOKENS`: optional comma-separated accepted ingress tokens
 - `REQUIRE_INTERNAL_SERVICE_TOKEN`: force strict internal token mode
 
 ### Session behavior
@@ -87,13 +101,10 @@ Service endpoints:
 - `AUTH_SESSION_TTL_SECONDS`: default session lifetime (`604800`)
 - `AUTH_SESSION_TOUCH_INTERVAL_SECONDS`: minimum interval between
   `last_seen_at` updates (`300`)
-
-### Rate limiting
-
-- `RATE_LIMIT_ENABLED`: global rate limiting switch
-- `RATE_LIMIT_REDIS_REQUIRED`: fail-closed when Redis is unavailable
-- `REDIS_URL`: Redis connection URL
-- `REDIS_SOCKET_TIMEOUT_SECONDS`: Redis socket timeout (`0.2`)
+- `AUTH_MAX_ACTIVE_SESSIONS_PER_USER`: active session cap per user (`5`)
+- `AUTH_SESSION_PURGE_INTERVAL_SECONDS`: background purge cadence (`900`)
+- `AUTH_SESSION_REVOKED_RETENTION_SECONDS`: retention for revoked sessions
+  before deletion (`86400`)
 
 ### DB pool tuning
 
@@ -114,8 +125,16 @@ Current tests cover:
 
 - Source syntax validity
 - Internal token behavior (local vs strict environments)
-- Rate limit Redis-required and memory fallback behavior
+- Wrapped `payload` request contract on internal auth routes
+- Invalid DB pool configuration fallback behavior
+- Corrupted password hash rejection during login
 - Session touch strategy (`last_seen_at` update policy)
+- Active session cap enforcement on login
+- Periodic session maintenance entrypoint
+
+Current gaps before strong production confidence:
+
+- No DB integration tests for `register -> login -> resolve -> logout`
 
 ## Docker
 
@@ -136,7 +155,8 @@ docker run --rm -p 8000:8000 \
 ```
 
 The image is multi-stage, runs as a non-root user, and installs
-`shared_backend` from a wheel built locally from the monorepo.
+`shared_backend` from a wheel built locally from the monorepo. The runtime
+base image is `python:3.13-slim`.
 
 ## Detailed Documentation
 

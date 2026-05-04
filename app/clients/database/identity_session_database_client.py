@@ -7,10 +7,35 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
-DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "5"))
-DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "10"))
-DB_POOL_TIMEOUT_SECONDS = int(os.getenv("DB_POOL_TIMEOUT_SECONDS", "30"))
-DB_POOL_RECYCLE_SECONDS = int(os.getenv("DB_POOL_RECYCLE_SECONDS", "1800"))
+DEFAULT_DB_POOL_SIZE = 5
+DEFAULT_DB_MAX_OVERFLOW = 10
+DEFAULT_DB_POOL_TIMEOUT_SECONDS = 30
+DEFAULT_DB_POOL_RECYCLE_SECONDS = 1800
+
+
+def _read_int_env(name: str, default: int, *, minimum: int | None = None) -> int:
+	raw_value = os.getenv(name, str(default)).strip()
+	try:
+		parsed = int(raw_value)
+	except ValueError:
+		return default
+	if minimum is not None and parsed < minimum:
+		return default
+	return parsed
+
+
+DB_POOL_SIZE = _read_int_env("DB_POOL_SIZE", DEFAULT_DB_POOL_SIZE, minimum=1)
+DB_MAX_OVERFLOW = _read_int_env("DB_MAX_OVERFLOW", DEFAULT_DB_MAX_OVERFLOW, minimum=0)
+DB_POOL_TIMEOUT_SECONDS = _read_int_env(
+	"DB_POOL_TIMEOUT_SECONDS",
+	DEFAULT_DB_POOL_TIMEOUT_SECONDS,
+	minimum=1,
+)
+DB_POOL_RECYCLE_SECONDS = _read_int_env(
+	"DB_POOL_RECYCLE_SECONDS",
+	DEFAULT_DB_POOL_RECYCLE_SECONDS,
+	minimum=1,
+)
 
 DEFAULT_IDENTITY_DATABASE_URL = "postgresql://manifeed:manifeed@localhost:5432/manifeed_identity"
 

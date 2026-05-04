@@ -7,6 +7,7 @@
 - `IDENTITY_DATABASE_URL`: PostgreSQL DSN for identity database
 - `REQUIRE_EXPLICIT_DATABASE_URLS`: forces explicit DB URL in strict envs
 - `INTERNAL_SERVICE_TOKEN`: shared internal secret
+- `INTERNAL_SERVICE_TOKENS`: optional comma-separated accepted ingress tokens
 - `REQUIRE_INTERNAL_SERVICE_TOKEN`: strict token requirement toggle
 
 ## Session Variables
@@ -19,21 +20,16 @@
 	- default: `300` (5 minutes)
 	- invalid/negative values fallback to default
 
-## Rate Limiting Variables
+- `AUTH_MAX_ACTIVE_SESSIONS_PER_USER`
+	- default: `5`
+	- invalid/non-positive values fallback to default
 
-- `RATE_LIMIT_ENABLED`
-	- enabled by default
-	- disable with `0`, `false`, `no`, `off`
+- `AUTH_SESSION_PURGE_INTERVAL_SECONDS`
+	- default: `900` (15 minutes)
+	- invalid/non-positive values fallback to default
 
-- `RATE_LIMIT_REDIS_REQUIRED`
-	- explicit strict/optional behavior when set
-	- if unset, strict behavior is applied in production-like envs
-
-- `REDIS_URL`
-	- default: `redis://redis:6379/0`
-
-- `REDIS_SOCKET_TIMEOUT_SECONDS`
-	- default: `0.2`
+- `AUTH_SESSION_REVOKED_RETENTION_SECONDS`
+	- default: `86400` (24 hours)
 	- invalid/non-positive values fallback to default
 
 ## Database Pool Variables
@@ -42,3 +38,7 @@
 - `DB_MAX_OVERFLOW` (default: `10`)
 - `DB_POOL_TIMEOUT_SECONDS` (default: `30`)
 - `DB_POOL_RECYCLE_SECONDS` (default: `1800`)
+
+Current implementation note:
+
+- invalid or too-small DB pool values fall back to safe defaults at import time

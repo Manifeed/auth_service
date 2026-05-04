@@ -34,3 +34,11 @@ def test_internal_token_matches_constant_time_secret(monkeypatch) -> None:
 	monkeypatch.setenv("INTERNAL_SERVICE_TOKEN", token)
 
 	require_internal_service_token(_request(token))
+
+
+def test_internal_token_matches_any_configured_secret(monkeypatch) -> None:
+	monkeypatch.setenv("APP_ENV", "production")
+	monkeypatch.delenv("INTERNAL_SERVICE_TOKEN", raising=False)
+	monkeypatch.setenv("INTERNAL_SERVICE_TOKENS", f"{'a' * 32},{'b' * 32}")
+
+	require_internal_service_token(_request("b" * 32))

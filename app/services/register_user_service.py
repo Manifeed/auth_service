@@ -3,17 +3,21 @@ from __future__ import annotations
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .user_read_service import build_authenticated_user_read
+
 from app.clients.database import identity_database_client
+
+from shared_backend.utils.auth_utils import hash_password
+from shared_backend.domain.password_policy import validate_password_policy
+from shared_backend.domain.user_identity import normalize_user_pseudo
 from shared_backend.errors.custom_exceptions import (
 	DuplicateUserRegistrationError,
 	InvalidPseudoError,
 )
-from shared_backend.domain.password_policy import validate_password_policy
-from shared_backend.domain.user_identity import normalize_user_pseudo
-from shared_backend.schemas.auth.auth_schema import AuthRegisterRead, AuthRegisterRequestSchema
-from app.utils.auth_utils import hash_password
-
-from .user_read_service import build_authenticated_user_read
+from shared_backend.schemas.auth.auth_schema import (
+	AuthRegisterRead,
+	AuthRegisterRequestSchema,
+)
 
 
 def register_user(
@@ -22,7 +26,7 @@ def register_user(
 	*,
 	commit: bool = True,
 ) -> AuthRegisterRead:
-	normalized_email = _normalize_email(payload.email)
+	normalized_email = payload.email.strip().lower()
 	normalized_pseudo = _normalize_pseudo(payload.pseudo)
 	validate_password_policy(payload.password)
 	if identity_database_client.get_user_by_email(db, email=normalized_email) is not None:
@@ -51,10 +55,6 @@ def register_user(
 		raise
 
 	return AuthRegisterRead(user=build_authenticated_user_read(user))
-
-
-def _normalize_email(email: str) -> str:
-	return email.strip().lower()
 
 
 def _normalize_pseudo(pseudo: str) -> str:

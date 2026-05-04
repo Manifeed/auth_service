@@ -1,33 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.schemas.user_context import UserRecord, UserSessionContextRecord
 
-@dataclass(frozen=True)
-class UserRecord:
-	id: int
-	email: str
-	pseudo: str
-	pp_id: int
-	password_hash: str
-	role: str
-	is_active: bool
-	api_access_enabled: bool
-	created_at: datetime
-	updated_at: datetime
-
-
-@dataclass(frozen=True)
-class UserSessionContextRecord:
-	user: UserRecord
-	expires_at: datetime
-	last_seen_at: datetime | None
+from shared_backend.utils.datetime_utils import normalize_datetime_to_utc
 
 
 def create_user(
@@ -176,7 +158,7 @@ def create_user_session(
 		{
 			"user_id": user_id,
 			"token_hash": token_hash,
-			"expires_at": _normalize_datetime(expires_at),
+			"expires_at": normalize_datetime_to_utc(expires_at),
 		},
 	).scalar_one()
 
@@ -219,8 +201,8 @@ def get_user_session_context_by_token_hash(
 		return None
 	return UserSessionContextRecord(
 		user=_map_user(row),
-		expires_at=_normalize_datetime(row["expires_at"]) or datetime.now(timezone.utc),
-		last_seen_at=_normalize_datetime(row["last_seen_at"]),
+		expires_at=normalize_datetime_to_utc(row["expires_at"]) or datetime.now(timezone.utc),
+		last_seen_at=normalize_datetime_to_utc(row["last_seen_at"]),
 	)
 
 
@@ -252,6 +234,70 @@ def revoke_user_session_by_token_hash(db: Session, *, token_hash: str) -> None:
 	)
 
 
+def revoke_excess_active_user_sessions(
+	db: Session,
+	*,
+	user_id: int,
+	keep_limit: int,
+	now: datetime | None = None,
+) -> int:
+	rows = db.execute(
+		text(
+			"""
+			WITH ranked_sessions AS (
+				SELECT id
+				FROM user_sessions
+				WHERE user_id = :user_id
+					AND revoked_at IS NULL
+					AND expires_at > :now
+				ORDER BY
+					COALESCE(last_seen_at, created_at) DESC,
+					created_at DESC,
+					id DESC
+				OFFSET :keep_limit
+			)
+			UPDATE user_sessions
+			SET revoked_at = now()
+			WHERE id IN (SELECT id FROM ranked_sessions)
+				AND revoked_at IS NULL
+			RETURNING id
+			"""
+		),
+		{
+			"user_id": user_id,
+			"keep_limit": keep_limit,
+			"now": normalize_datetime_to_utc(now) or datetime.now(timezone.utc),
+		},
+	).all()
+	return len(rows)
+
+
+def purge_retired_user_sessions(
+	db: Session,
+	*,
+	expired_before: datetime,
+	revoked_before: datetime,
+) -> int:
+	rows = db.execute(
+		text(
+			"""
+			DELETE FROM user_sessions
+			WHERE expires_at <= :expired_before
+				OR (
+					revoked_at IS NOT NULL
+					AND revoked_at <= :revoked_before
+				)
+			RETURNING id
+			"""
+		),
+		{
+			"expired_before": normalize_datetime_to_utc(expired_before) or datetime.now(timezone.utc),
+			"revoked_before": normalize_datetime_to_utc(revoked_before) or datetime.now(timezone.utc),
+		},
+	).all()
+	return len(rows)
+
+
 def _map_user(row: Mapping[str, Any]) -> UserRecord:
 	return UserRecord(
 		id=int(row["id"]),
@@ -262,14 +308,6 @@ def _map_user(row: Mapping[str, Any]) -> UserRecord:
 		role=str(row["role"]),
 		is_active=bool(row["is_active"]),
 		api_access_enabled=bool(row["api_access_enabled"]),
-		created_at=_normalize_datetime(row["created_at"]) or datetime.now(timezone.utc),
-		updated_at=_normalize_datetime(row["updated_at"]) or datetime.now(timezone.utc),
+		created_at=normalize_datetime_to_utc(row["created_at"]) or datetime.now(timezone.utc),
+		updated_at=normalize_datetime_to_utc(row["updated_at"]) or datetime.now(timezone.utc),
 	)
-
-
-def _normalize_datetime(value: datetime | None) -> datetime | None:
-	if value is None:
-		return None
-	if value.tzinfo is None:
-		return value.replace(tzinfo=timezone.utc)
-	return value.astimezone(timezone.utc)

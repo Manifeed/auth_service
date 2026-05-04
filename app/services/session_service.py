@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
-
 from sqlalchemy.orm import Session
 
 from app.clients.database import identity_database_client
+from app.schemas.user_context import AuthenticatedUserContext
+from app.services.user_read_service import build_authenticated_user_read
+
+from shared_backend.utils.auth_utils import hash_secret_token
 from shared_backend.errors.custom_exceptions import (
 	ExpiredSessionTokenError,
 	InactiveUserError,
@@ -13,15 +16,16 @@ from shared_backend.errors.custom_exceptions import (
 	MissingSessionTokenError,
 	UserNotFoundError,
 )
-from shared_backend.schemas.auth.auth_schema import AuthLogoutRead, AuthSessionRead
-from app.services.user_read_service import (
-	AuthenticatedUserContext,
-	build_authenticated_user_read,
+from shared_backend.schemas.auth.auth_schema import (
+	AuthLogoutRead,
+	AuthSessionRead,
 )
-from app.utils.auth_utils import hash_secret_token
 
 DEFAULT_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
 DEFAULT_SESSION_TOUCH_INTERVAL_SECONDS = 5 * 60
+DEFAULT_SESSION_PURGE_INTERVAL_SECONDS = 15 * 60
+DEFAULT_SESSION_REVOKED_RETENTION_SECONDS = 24 * 60 * 60
+DEFAULT_MAX_ACTIVE_SESSIONS_PER_USER = 5
 
 
 def read_current_session(
@@ -68,6 +72,35 @@ def logout_session_token(
 	return AuthLogoutRead(ok=True)
 
 
+def enforce_user_session_limit(db: Session, *, user_id: int) -> int:
+	return identity_database_client.revoke_excess_active_user_sessions(
+		db,
+		user_id=user_id,
+		keep_limit=resolve_max_active_sessions_per_user(),
+	)
+
+
+def purge_retired_sessions(
+	db: Session,
+	*,
+	commit: bool = True,
+) -> int:
+	now = datetime.now(timezone.utc)
+	try:
+		purged_count = identity_database_client.purge_retired_user_sessions(
+			db,
+			expired_before=now,
+			revoked_before=now - timedelta(seconds=resolve_session_revoked_retention_seconds()),
+		)
+		if commit:
+			db.commit()
+	except Exception:
+		if commit:
+			db.rollback()
+		raise
+	return purged_count
+
+
 def resolve_session_token(
 	db: Session,
 	*,
@@ -99,8 +132,6 @@ def resolve_session_token(
 		identity_database_client.touch_user_session(db, token_hash=token_hash)
 		if commit:
 			db.commit()
-	elif commit:
-		db.rollback()
 	return AuthenticatedUserContext(
 		user_id=session_context.user.id,
 		email=session_context.user.email,
@@ -130,6 +161,38 @@ def resolve_session_touch_interval_seconds() -> int:
 		return DEFAULT_SESSION_TOUCH_INTERVAL_SECONDS
 	if parsed < 0:
 		return DEFAULT_SESSION_TOUCH_INTERVAL_SECONDS
+	return parsed
+
+
+def resolve_session_purge_interval_seconds() -> int:
+	return _read_positive_int_env(
+		"AUTH_SESSION_PURGE_INTERVAL_SECONDS",
+		DEFAULT_SESSION_PURGE_INTERVAL_SECONDS,
+	)
+
+
+def resolve_session_revoked_retention_seconds() -> int:
+	return _read_positive_int_env(
+		"AUTH_SESSION_REVOKED_RETENTION_SECONDS",
+		DEFAULT_SESSION_REVOKED_RETENTION_SECONDS,
+	)
+
+
+def resolve_max_active_sessions_per_user() -> int:
+	return _read_positive_int_env(
+		"AUTH_MAX_ACTIVE_SESSIONS_PER_USER",
+		DEFAULT_MAX_ACTIVE_SESSIONS_PER_USER,
+	)
+
+
+def _read_positive_int_env(name: str, default: int) -> int:
+	raw_value = os.getenv(name, str(default)).strip()
+	try:
+		parsed = int(raw_value)
+	except ValueError:
+		return default
+	if parsed <= 0:
+		return default
 	return parsed
 
 

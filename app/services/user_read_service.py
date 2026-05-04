@@ -1,20 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
+from app.schemas.user_context import UserRecord
 
-from app.clients.database.identity_database_client import UserRecord
 from shared_backend.schemas.auth.auth_schema import AuthenticatedUserRead
-
-
-@dataclass(frozen=True)
-class AuthenticatedUserContext:
-	user_id: int
-	email: str
-	role: str
-	is_active: bool
-	api_access_enabled: bool
-	session_expires_at: datetime
 
 
 def build_authenticated_user_read(user: UserRecord) -> AuthenticatedUserRead:
