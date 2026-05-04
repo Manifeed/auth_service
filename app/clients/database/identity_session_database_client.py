@@ -37,26 +37,14 @@ DB_POOL_RECYCLE_SECONDS = _read_int_env(
 	minimum=1,
 )
 
-DEFAULT_IDENTITY_DATABASE_URL = "postgresql://manifeed:manifeed@localhost:5432/manifeed_identity"
-
-
 def _resolve_database_url() -> str:
 	database_url = os.getenv("IDENTITY_DATABASE_URL")
-	if not database_url:
-		if _requires_explicit_database_url():
-			raise RuntimeError("IDENTITY_DATABASE_URL must be configured outside local/test environments")
-		database_url = DEFAULT_IDENTITY_DATABASE_URL
+	if not database_url or not database_url.strip():
+		raise RuntimeError("IDENTITY_DATABASE_URL must be configured")
+	database_url = database_url.strip()
 	if database_url.startswith("postgresql://") and "+psycopg" not in database_url:
 		return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
 	return database_url
-
-
-def _requires_explicit_database_url() -> bool:
-	raw_value = os.getenv("REQUIRE_EXPLICIT_DATABASE_URLS")
-	if raw_value is not None:
-		return raw_value.strip().lower() in {"1", "true", "yes", "on"}
-	environment = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "")).strip().lower()
-	return environment in {"prod", "production", "staging"}
 
 
 def _create_engine(database_url: str) -> Engine:

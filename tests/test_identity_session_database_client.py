@@ -5,8 +5,10 @@ from app.clients.database import identity_session_database_client as database_cl
 
 def test_invalid_db_pool_values_fallback_to_defaults(monkeypatch) -> None:
 	monkeypatch.setenv("APP_ENV", "local")
-	monkeypatch.delenv("REQUIRE_EXPLICIT_DATABASE_URLS", raising=False)
-	monkeypatch.delenv("IDENTITY_DATABASE_URL", raising=False)
+	monkeypatch.setenv(
+		"IDENTITY_DATABASE_URL",
+		"postgresql://manifeed:manifeed@localhost:5432/manifeed_identity_test",
+	)
 	monkeypatch.setenv("DB_POOL_SIZE", "not-a-number")
 	monkeypatch.setenv("DB_MAX_OVERFLOW", "-1")
 	monkeypatch.setenv("DB_POOL_TIMEOUT_SECONDS", "0")
@@ -22,8 +24,10 @@ def test_invalid_db_pool_values_fallback_to_defaults(monkeypatch) -> None:
 
 def test_valid_db_pool_values_are_preserved(monkeypatch) -> None:
 	monkeypatch.setenv("APP_ENV", "local")
-	monkeypatch.delenv("REQUIRE_EXPLICIT_DATABASE_URLS", raising=False)
-	monkeypatch.delenv("IDENTITY_DATABASE_URL", raising=False)
+	monkeypatch.setenv(
+		"IDENTITY_DATABASE_URL",
+		"postgresql://manifeed:manifeed@localhost:5432/manifeed_identity_test",
+	)
 	monkeypatch.setenv("DB_POOL_SIZE", "8")
 	monkeypatch.setenv("DB_MAX_OVERFLOW", "12")
 	monkeypatch.setenv("DB_POOL_TIMEOUT_SECONDS", "45")
