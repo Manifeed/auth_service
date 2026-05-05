@@ -4,6 +4,7 @@
 
 - set `APP_ENV=production` (or explicit staging value)
 - configure strong `INTERNAL_SERVICE_TOKEN` (min 32 chars)
+- expect startup failure if no strong internal token is configured
 - prefer distinct caller tokens and configure accepted ingress tokens through `INTERNAL_SERVICE_TOKENS` when rotating away from a single shared secret
 - set explicit `IDENTITY_DATABASE_URL` for all deployments
 - monitor DB pool usage, login failures, and session churn

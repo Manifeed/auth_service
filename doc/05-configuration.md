@@ -6,9 +6,8 @@
 - `ENVIRONMENT`: fallback environment selector
 - `IDENTITY_DATABASE_URL`: PostgreSQL DSN for identity database
 - `REQUIRE_EXPLICIT_DATABASE_URLS`: forces explicit DB URL in strict envs
-- `INTERNAL_SERVICE_TOKEN`: shared internal secret
+- `INTERNAL_SERVICE_TOKEN`: shared internal secret, required at startup, minimum 32 characters
 - `INTERNAL_SERVICE_TOKENS`: optional comma-separated accepted ingress tokens
-- `REQUIRE_INTERNAL_SERVICE_TOKEN`: strict token requirement toggle
 
 ## Session Variables
 

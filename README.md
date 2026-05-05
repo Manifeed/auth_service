@@ -69,12 +69,12 @@ All `POST /internal/auth/*` endpoints expect a JSON body wrapped under
 
 ## Security Model
 
-- All `/internal/auth/*` routes require `x-manifeed-internal-token`
-  except in explicit local/test environments without configured token.
+- All `/internal/auth/*` routes require `x-manifeed-internal-token`.
+- Startup fails if no strong internal token is configured.
 - Incoming auth can validate either one `INTERNAL_SERVICE_TOKEN` or multiple
   accepted secrets via `INTERNAL_SERVICE_TOKENS`.
 - `/internal/health` and `/internal/ready` stay unauthenticated for probes;
-  `/internal/ready` still validates strict token configuration.
+  `/internal/ready` still validates token configuration.
 - Session tokens are generated as random secrets and only their SHA-256 hash
   is persisted in `user_sessions`.
 - Active sessions are capped per user and older sessions are revoked on login.
@@ -94,7 +94,6 @@ All `POST /internal/auth/*` endpoints expect a JSON body wrapped under
 - `REQUIRE_EXPLICIT_DATABASE_URLS`: requires explicit DB URL in strict envs
 - `INTERNAL_SERVICE_TOKEN`: shared secret for internal route protection
 - `INTERNAL_SERVICE_TOKENS`: optional comma-separated accepted ingress tokens
-- `REQUIRE_INTERNAL_SERVICE_TOKEN`: force strict internal token mode
 
 ### Session behavior
 
@@ -124,7 +123,7 @@ pytest -q
 Current tests cover:
 
 - Source syntax validity
-- Internal token behavior (local vs strict environments)
+- Internal token behavior and strong-token requirements
 - Wrapped `payload` request contract on internal auth routes
 - Invalid DB pool configuration fallback behavior
 - Corrupted password hash rejection during login

@@ -19,6 +19,7 @@ from shared_backend.utils.logging_utils import (
 
 @asynccontextmanager
 async def _app_lifespan(_: FastAPI):
+	validate_internal_service_token_configuration()
 	maintenance_task = start_session_maintenance_task()
 	try:
 		yield
