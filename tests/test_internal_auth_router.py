@@ -34,7 +34,8 @@ def _build_client(monkeypatch) -> TestClient:
 	app = FastAPI()
 	app.include_router(router_module.internal_auth_router)
 	app.dependency_overrides[router_module.require_internal_service_token] = lambda: None
-	app.dependency_overrides[router_module.get_identity_db_session] = lambda: object()
+	app.dependency_overrides[router_module.get_identity_read_db_session] = lambda: object()
+	app.dependency_overrides[router_module.get_identity_write_db_session] = lambda: object()
 
 	user = _user_read()
 	monkeypatch.setattr(
