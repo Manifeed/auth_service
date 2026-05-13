@@ -8,10 +8,11 @@ Header used for internal authorization:
 
 Policy:
 
-- local/test-like environments may allow missing token when not configured
-- strict environments require configured token
-- weak tokens are rejected in strict mode
+- the service fails startup when no internal token is configured
+- accepted tokens come from `INTERNAL_SERVICE_TOKEN` or comma-separated `INTERNAL_SERVICE_TOKENS`
+- weak tokens are rejected
 - token comparison uses constant-time `secrets.compare_digest`
+- `/internal/health` and `/internal/ready` stay unauthenticated for orchestration probes
 
 ## Password Security
 
@@ -26,15 +27,20 @@ Policy:
 - only token hash is stored in database
 - expired tokens are revoked during resolution
 - `last_seen_at` updates are throttled by touch interval
+- active sessions are capped per user at login time
+- a background maintenance loop purges expired sessions and aged revoked sessions
 
-## Rate Limiting Security
+## Edge And Gateway Controls
 
-Login and register endpoints are protected with namespace-based buckets:
+`auth_service` no longer applies local rate limiting.
 
-- IP-based buckets
-- email-based buckets
+Expected deployment model:
 
-Redis availability policy:
+- edge/Nginx owns coarse IP-based throttling
+- `public_api` owns identifier-based throttling such as email and pseudo
+- `auth_service` assumes trusted internal callers and should not be exposed directly
 
-- strict mode blocks when Redis is unavailable
-- optional mode uses in-memory fallback
+## Current Security Gaps
+
+- inter-service auth still uses header-borne shared secrets rather than mTLS or JWT
+- session token hashing uses plain SHA-256 without an extra server-side pepper

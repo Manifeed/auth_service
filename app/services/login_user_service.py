@@ -1,21 +1,27 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-
 from sqlalchemy.orm import Session
 
-from app.clients.database import identity_database_client
-from shared_backend.errors.custom_exceptions import InactiveUserError, InvalidCredentialsError
-from shared_backend.schemas.auth.auth_schema import AuthLoginRequestSchema
-from shared_backend.schemas.auth.session_schema import AuthLoginResult
-from app.utils.auth_utils import (
-	generate_session_token,
-	hash_secret_token,
-	verify_password,
+from .user_read_service import build_authenticated_user_read
+from .session_service import (
+	enforce_user_session_limit,
+	resolve_session_ttl_seconds,
 )
 
-from .session_service import resolve_session_ttl_seconds
-from .user_read_service import build_authenticated_user_read
+from app.clients.database import identity_database_client
+from app.utils.auth_utils import generate_session_token
+
+from shared_backend.schemas.auth.auth_schema import AuthLoginRequestSchema
+from shared_backend.schemas.auth.session_schema import AuthLoginResult
+from shared_backend.errors.custom_exceptions import (
+	InactiveUserError,
+	InvalidCredentialsError,
+)
+from shared_backend.utils.auth_utils import (
+	verify_password,
+	hash_secret_token,
+)
 
 
 def login_user(
@@ -43,6 +49,7 @@ def login_user(
 			token_hash=hash_secret_token(session_token),
 			expires_at=expires_at,
 		)
+		enforce_user_session_limit(db, user_id=user.id)
 		if commit:
 			db.commit()
 	except Exception:

@@ -14,12 +14,15 @@ clients.
 - Authenticate users and issue session tokens
 - Resolve session tokens into authenticated user context
 - Revoke sessions through logout
+- Cap concurrent active sessions per user
+- Purge expired/revoked sessions on a background cadence
 - Enforce internal service token authorization
-- Apply rate limiting on login and registration
+- Expose health/readiness probes for orchestrators
+- Emit shared request logs and shared JSON error payloads
+- Stay focused on identity/session rules while edge and gateway layers own rate limiting
 
 ## Technical Stack
 
 - FastAPI
 - SQLAlchemy + psycopg + PostgreSQL
-- Redis (rate limiting counters)
 - `manifeed-shared-backend` for shared schemas/domain/errors

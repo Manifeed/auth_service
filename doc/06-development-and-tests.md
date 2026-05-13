@@ -15,12 +15,6 @@ export APP_ENV=local
 export IDENTITY_DATABASE_URL=postgresql://manifeed:manifeed@localhost:5432/manifeed_identity
 ```
 
-Optional Redis:
-
-```bash
-export REDIS_URL=redis://localhost:6379/0
-```
-
 Run service:
 
 ```bash
@@ -42,8 +36,6 @@ docker run --rm -p 8000:8000 \
 	-e APP_ENV=production \
 	-e IDENTITY_DATABASE_URL='postgresql://user:pass@host:5432/db' \
 	-e INTERNAL_SERVICE_TOKEN='replace-with-strong-secret-min-32-chars' \
-	-e RATE_LIMIT_REDIS_REQUIRED=true \
-	-e REDIS_URL='redis://redis:6379/0' \
 	manifeed-auth-service
 ```
 
@@ -59,11 +51,17 @@ Current test coverage:
 
 - source syntax validation
 - internal token behavior
-- rate limit fallback/strict behavior
+- wrapped `payload` route contract
+- DB pool configuration fallback
+- corrupted password hash rejection at login
 - session touch interval logic
+- active session cap enforcement
+- session maintenance entrypoint behavior
 
 Recommended next tests:
 
 - DB integration tests for register/login/session/logout flows
-- Redis integration tests for TTL and counter behavior
-- route-level contract tests per endpoint
+
+## Runtime Base
+
+The container build now targets `python:3.13-slim`.
