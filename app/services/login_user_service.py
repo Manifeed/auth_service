@@ -10,7 +10,6 @@ from .session_service import (
 )
 
 from app.clients.database import identity_database_client
-from app.utils.auth_utils import generate_session_token
 
 from shared_backend.schemas.auth.auth_schema import AuthLoginRequestSchema
 from shared_backend.schemas.auth.session_schema import AuthLoginResult
@@ -21,6 +20,7 @@ from shared_backend.errors.custom_exceptions import (
 from shared_backend.utils.auth_utils import (
 	verify_password,
 	hash_secret_token,
+	generate_session_token,
 )
 
 
