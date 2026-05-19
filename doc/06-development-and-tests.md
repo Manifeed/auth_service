@@ -52,11 +52,12 @@ Current test coverage:
 - source syntax validation
 - internal token behavior
 - wrapped `payload` route contract
-- DB pool configuration fallback
+- identity database URL resolution (explicit read/write URLs and legacy fallback)
 - corrupted password hash rejection at login
 - session touch interval logic
 - active session cap enforcement
 - session maintenance entrypoint behavior
+- session purge retention window behavior
 
 Recommended next tests:
 

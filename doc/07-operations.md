@@ -6,7 +6,7 @@
 - configure strong `INTERNAL_SERVICE_TOKEN` (min 32 chars)
 - expect startup failure if no strong internal token is configured
 - prefer distinct caller tokens and configure accepted ingress tokens through `INTERNAL_SERVICE_TOKENS` when rotating away from a single shared secret
-- set explicit `IDENTITY_DATABASE_URL` for all deployments
+- set explicit `IDENTITY_READ_DATABASE_URL` and `IDENTITY_WRITE_DATABASE_URL` for all deployments, or a single legacy `IDENTITY_DATABASE_URL` when read/write split is not required
 - monitor DB pool usage, login failures, and session churn
 - keep `/internal/auth/*` behind trusted internal networking only
 - ensure edge and `public_api` rate limiting stay enabled, because this service does not throttle locally
@@ -23,7 +23,7 @@
 Update docs in this folder whenever behavior changes in:
 
 - `app/main.py`
-- `app/services/routers/internal_auth_router.py`
+- `app/routers/internal_auth_router.py`
 - `app/services/*`
 - `shared_backend/security/internal_service_auth.py`
 - `app/clients/database/*`

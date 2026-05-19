@@ -117,7 +117,7 @@ def test_purge_retired_sessions_uses_retention_window(monkeypatch) -> None:
 
 	class _FrozenDatetime(datetime):
 		@classmethod
-		def now(cls, tz=None):
+		def now(cls, _tz=None):
 			return now
 
 	monkeypatch.setattr(session_service, "datetime", _FrozenDatetime)

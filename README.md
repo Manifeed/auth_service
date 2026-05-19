@@ -18,7 +18,7 @@ services, not by browsers or public clients directly.
 
 ## Architecture Overview
 
-- `app/services/routers`: HTTP route layer (`/internal/auth/*`)
+- `app/routers`: HTTP route layer (`/internal/auth/*`)
 - `app/services`: auth business use cases
 - `app/clients/database`: SQLAlchemy session and SQL access layer
 - `shared_backend.security.internal_service_auth`: shared inter-service token validation helpers
@@ -90,7 +90,9 @@ All `POST /internal/auth/*` endpoints expect a JSON body wrapped under
 ### Core runtime
 
 - `APP_ENV` / `ENVIRONMENT`: environment mode resolver
-- `IDENTITY_DATABASE_URL`: identity Postgres DSN
+- `IDENTITY_DATABASE_URL`: legacy identity Postgres DSN (read/write fallback)
+- `IDENTITY_READ_DATABASE_URL`: identity read Postgres DSN
+- `IDENTITY_WRITE_DATABASE_URL`: identity write Postgres DSN
 - `REQUIRE_EXPLICIT_DATABASE_URLS`: requires explicit DB URL in strict envs
 - `INTERNAL_SERVICE_TOKEN`: shared secret for internal route protection
 - `INTERNAL_SERVICE_TOKENS`: optional comma-separated accepted ingress tokens
@@ -125,6 +127,7 @@ Current tests cover:
 - Source syntax validity
 - Internal token behavior and strong-token requirements
 - Wrapped `payload` request contract on internal auth routes
+- Identity database URL resolution (explicit read/write URLs and legacy fallback)
 - Invalid DB pool configuration fallback behavior
 - Corrupted password hash rejection during login
 - Session touch strategy (`last_seen_at` update policy)

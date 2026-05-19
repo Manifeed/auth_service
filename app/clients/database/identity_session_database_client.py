@@ -19,7 +19,6 @@ _IDENTITY_DATABASE = configure_database_access(
 
 IDENTITY_READ_DATABASE_URL = _IDENTITY_DATABASE.read_url
 IDENTITY_WRITE_DATABASE_URL = _IDENTITY_DATABASE.write_url
-IDENTITY_DATABASE_URL = IDENTITY_READ_DATABASE_URL
 
 identity_read_engine = _IDENTITY_DATABASE.read_engine
 IdentityReadSessionLocal = _IDENTITY_DATABASE.read_session_factory
@@ -35,9 +34,5 @@ def get_identity_write_db_session() -> Generator[Session, None, None]:
 	yield from shared_get_db_session(IdentityWriteSessionLocal)
 
 
-def check_identity_read_database_ready() -> None:
-	check_database_ready(identity_read_engine)
-
-
 def check_identity_database_ready() -> None:
-	check_identity_read_database_ready()
+	check_database_ready(identity_read_engine)

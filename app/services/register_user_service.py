@@ -23,8 +23,6 @@ from shared_backend.schemas.auth.auth_schema import (
 def register_user(
 	db: Session,
 	payload: AuthRegisterRequestSchema,
-	*,
-	commit: bool = True,
 ) -> AuthRegisterRead:
 	normalized_email = payload.email.strip().lower()
 	normalized_pseudo = _normalize_pseudo(payload.pseudo)
@@ -43,15 +41,12 @@ def register_user(
 			is_active=True,
 			api_access_enabled=False,
 		)
-		if commit:
-			db.commit()
+		db.commit()
 	except IntegrityError as exception:
-		if commit:
-			db.rollback()
+		db.rollback()
 		raise DuplicateUserRegistrationError() from exception
 	except Exception:
-		if commit:
-			db.rollback()
+		db.rollback()
 		raise
 
 	return AuthRegisterRead(user=build_authenticated_user_read(user))

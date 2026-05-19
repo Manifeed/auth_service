@@ -239,8 +239,8 @@ def revoke_excess_active_user_sessions(
 	*,
 	user_id: int,
 	keep_limit: int,
-	now: datetime | None = None,
 ) -> int:
+	now = datetime.now(timezone.utc)
 	rows = db.execute(
 		text(
 			"""
@@ -266,7 +266,7 @@ def revoke_excess_active_user_sessions(
 		{
 			"user_id": user_id,
 			"keep_limit": keep_limit,
-			"now": normalize_datetime_to_utc(now) or datetime.now(timezone.utc),
+			"now": normalize_datetime_to_utc(now),
 		},
 	).all()
 	return len(rows)

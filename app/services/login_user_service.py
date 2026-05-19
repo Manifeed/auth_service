@@ -27,8 +27,6 @@ from shared_backend.utils.auth_utils import (
 def login_user(
 	db: Session,
 	payload: AuthLoginRequestSchema,
-	*,
-	commit: bool = True,
 ) -> AuthLoginResult:
 	normalized_email = payload.email.strip().lower()
 	user = identity_database_client.get_user_by_email(db, email=normalized_email)
@@ -50,11 +48,9 @@ def login_user(
 			expires_at=expires_at,
 		)
 		enforce_user_session_limit(db, user_id=user.id)
-		if commit:
-			db.commit()
+		db.commit()
 	except Exception:
-		if commit:
-			db.rollback()
+		db.rollback()
 		raise
 
 	return AuthLoginResult(

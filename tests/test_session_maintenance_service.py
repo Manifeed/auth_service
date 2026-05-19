@@ -12,7 +12,7 @@ class _FakeSessionContext:
 	def __enter__(self):
 		return self._db
 
-	def __exit__(self, exc_type, exc, tb) -> None:
+	def __exit__(self, _exc_type, _exc, _tb) -> None:
 		return None
 
 

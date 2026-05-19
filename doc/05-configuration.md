@@ -4,7 +4,9 @@
 
 - `APP_ENV`: primary environment selector
 - `ENVIRONMENT`: fallback environment selector
-- `IDENTITY_DATABASE_URL`: PostgreSQL DSN for identity database
+- `IDENTITY_READ_DATABASE_URL`: PostgreSQL DSN for identity read access
+- `IDENTITY_WRITE_DATABASE_URL`: PostgreSQL DSN for identity write access
+- `IDENTITY_DATABASE_URL`: legacy PostgreSQL DSN used as read/write fallback
 - `REQUIRE_EXPLICIT_DATABASE_URLS`: forces explicit DB URL in strict envs
 - `INTERNAL_SERVICE_TOKEN`: shared internal secret, required at startup, minimum 32 characters
 - `INTERNAL_SERVICE_TOKENS`: optional comma-separated accepted ingress tokens

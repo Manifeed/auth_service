@@ -28,10 +28,12 @@ DEFAULT_SESSION_REVOKED_RETENTION_SECONDS = 24 * 60 * 60
 DEFAULT_MAX_ACTIVE_SESSIONS_PER_USER = 5
 
 
-def read_current_session(
+def read_current_session_by_token(
 	db: Session,
-	current_user: AuthenticatedUserContext,
+	*,
+	session_token: str,
 ) -> AuthSessionRead:
+	current_user = resolve_session_token(db, session_token=session_token)
 	user = identity_database_client.get_user_by_id(db, user_id=current_user.user_id)
 	if user is None:
 		raise UserNotFoundError()
@@ -41,32 +43,19 @@ def read_current_session(
 	)
 
 
-def read_current_session_by_token(
-	db: Session,
-	*,
-	session_token: str,
-	commit: bool = True,
-) -> AuthSessionRead:
-	current_user = resolve_session_token(db, session_token=session_token, commit=commit)
-	return read_current_session(db, current_user)
-
-
 def logout_session_token(
 	db: Session,
 	*,
 	session_token: str,
-	commit: bool = True,
 ) -> AuthLogoutRead:
 	try:
 		identity_database_client.revoke_user_session_by_token_hash(
 			db,
 			token_hash=hash_secret_token(session_token),
 		)
-		if commit:
-			db.commit()
+		db.commit()
 	except Exception:
-		if commit:
-			db.rollback()
+		db.rollback()
 		raise
 
 	return AuthLogoutRead(ok=True)
@@ -80,11 +69,7 @@ def enforce_user_session_limit(db: Session, *, user_id: int) -> int:
 	)
 
 
-def purge_retired_sessions(
-	db: Session,
-	*,
-	commit: bool = True,
-) -> int:
+def purge_retired_sessions(db: Session) -> int:
 	now = datetime.now(timezone.utc)
 	try:
 		purged_count = identity_database_client.purge_retired_user_sessions(
@@ -92,11 +77,9 @@ def purge_retired_sessions(
 			expired_before=now,
 			revoked_before=now - timedelta(seconds=resolve_session_revoked_retention_seconds()),
 		)
-		if commit:
-			db.commit()
+		db.commit()
 	except Exception:
-		if commit:
-			db.rollback()
+		db.rollback()
 		raise
 	return purged_count
 
@@ -105,7 +88,6 @@ def resolve_session_token(
 	db: Session,
 	*,
 	session_token: str,
-	commit: bool = True,
 ) -> AuthenticatedUserContext:
 	if not session_token:
 		raise MissingSessionTokenError()
@@ -122,16 +104,14 @@ def resolve_session_token(
 			db,
 			token_hash=token_hash,
 		)
-		if commit:
-			db.commit()
+		db.commit()
 		raise ExpiredSessionTokenError()
 	if not session_context.user.is_active:
 		raise InactiveUserError()
 
 	if _should_touch_session(session_context.last_seen_at):
 		identity_database_client.touch_user_session(db, token_hash=token_hash)
-		if commit:
-			db.commit()
+		db.commit()
 	return AuthenticatedUserContext(
 		user_id=session_context.user.id,
 		email=session_context.user.email,

@@ -2,7 +2,7 @@
 
 ## High-Level Layers
 
-- `app/services/routers`: HTTP route definitions and request entry points
+- `app/routers`: HTTP route definitions and request entry points
 - `app/services`: core authentication business logic
 - `app/clients/database`: DB session and SQL access
 - `shared_backend.security.internal_service_auth`: inter-service token validation
@@ -13,7 +13,7 @@
 
 Main router:
 
-- `app/services/routers/internal_auth_router.py`
+- `app/routers/internal_auth_router.py`
 - Prefix: `/internal/auth`
 - Protected by `require_internal_service_token`
 - All POST request bodies are embedded under `payload`
